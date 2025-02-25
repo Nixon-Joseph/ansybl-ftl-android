@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/HomeFragment">
+
+    <fragment
+        android:id="@+id/HomeFragment"
+        android:name="com.devpirates.ftl.HomeFragment"
+        android:label="@string/first_fragment_label"
+        tools:layout="@layout/fragment_home">
+        <action
+            android:id="@+id/action_HomeFragment_to_AnsyblItemsFragment"
+            app:destination="@id/AnsyblItemsFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/AnsyblItemsFragment"
+        android:name="com.devpirates.ftl.AnsyblItemsFragment"
+        android:label="TODO"
+        tools:layout="@layout/fragment_ansybl_items">
+
+        <action
+            android:id="@+id/action_AnsyblItemsFragment_to_HomeFragment"
+            app:destination="@id/HomeFragment" />
+        <argument
+            android:name="item"
+            app:argType="com.devpirates.ftl.models.AnsyblConnection" />
+        <action
+            android:id="@+id/action_AnsyblItemsFragment_to_ItemDetailFragment"
+            app:destination="@id/ItemDetailFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/ItemDetailFragment"
+        android:name="com.devpirates.ftl.ItemDetailFragment"
+        android:label="Todo"
+        tools:layout="@layout/fragment_item_detail">
+
+        <action
+            android:id="@+id/action_ItemDetailFragment_to_AnsyblItemsFragment"
+            app:destination="@id/AnsyblItemsFragment" />
+        <argument
+            android:name="item"
+            app:argType="com.devpirates.ftl.models.AnsyblItem" />
+    </fragment>
+</navigation>
