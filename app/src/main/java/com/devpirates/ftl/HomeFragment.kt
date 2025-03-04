@@ -12,9 +12,11 @@ import androidx.appcompat.app.AlertDialog
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.room.Room
 import com.devpirates.ftl.databinding.FragmentHomeBinding
-import com.devpirates.ftl.models.AnsyblConnection
 import com.devpirates.ftl.recycler.AnsyblConnectionRecyclerView
+import com.devpirates.ftl.room.AppDatabase
+import com.devpirates.ftl.room.ansyblconnection.AnsyblConnection
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -23,18 +25,37 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
+import java.time.Instant
 
 /**
  * A simple [Fragment] subclass as the default destination in the navigation.
  */
 class HomeFragment : Fragment() {
-
     private var _binding: FragmentHomeBinding? = null
 
     // This property is only valid between onCreateView and
     // onDestroyView.
     private val binding get() = _binding!!
     private val connections = arrayListOf<AnsyblConnection>()
+    private var db: AppDatabase? = null
+    private val adapter = AnsyblConnectionRecyclerView(connections)
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        db = Room.databaseBuilder(
+            super.requireContext(),
+            AppDatabase::class.java, "ansybl-connections"
+        )
+            //.addMigrations()
+            .fallbackToDestructiveMigration()
+            .build()
+
+        kotlin.concurrent.thread(true, false, null, "GetAnsyblConnections", 1, {
+            val allConnections = db!!.ansyblConnectionDao().getAll()
+            connections.addAll(allConnections)
+            adapter.notifyItemInserted(connections.size - 1)
+        })
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -44,13 +65,12 @@ class HomeFragment : Fragment() {
 
         val recyclerView = binding.root.findViewById<RecyclerView>(R.id.ansybl_recycler_view)
         recyclerView?.layoutManager = LinearLayoutManager(super.getContext())
-        val adapter = AnsyblConnectionRecyclerView(connections)
         recyclerView?.adapter = adapter
 
         binding.fab.setOnClickListener { view ->
             val builder = AlertDialog.Builder(super.requireContext());
             val input = EditText(super.requireContext())
-            input.hint = "https://domain.com/ansybl/feed.json"
+            input.hint = "https://domain.com/feed.ansybl"
             builder.setView(input)
 
             builder.setTitle("Add Ansybl Connection")
@@ -60,7 +80,26 @@ class HomeFragment : Fragment() {
                     asyncGetHttpRequest(
                         endpoint = input.text.toString(),
                         onSuccess = { apiRes ->
-                            connections.add(apiRes.response)
+                            val ansyblConnection = AnsyblConnection(
+                                apiRes.response.id,
+                                apiRes.response.summary,
+                                input.text.toString(),
+                                Instant.now().toString(),
+                                Gson().toJson(apiRes.response)
+                            )
+
+                            kotlin.concurrent.thread(true, false, null, "GetAnsyblConnections", 1, {
+                                try {
+                                    db!!.ansyblConnectionDao().insertAll(ansyblConnection)
+                                } catch (e: Exception) {
+                                    Log.d("Error", e.toString())
+                                    // put toast in main thread
+                                    super.requireActivity().runOnUiThread {
+                                        Toast.makeText(super.requireContext(), "Unable to save connection", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            })
+                            connections.add(ansyblConnection)
                             adapter.notifyItemInserted(connections.size - 1)
                             dialog.dismiss()
                         },
@@ -82,8 +121,9 @@ class HomeFragment : Fragment() {
         }
 
         adapter.onItemClick = { item ->
-            Log.d("Item", item.toString())
-            val action = HomeFragmentDirections.actionHomeFragmentToAnsyblItemsFragment(item)
+            Log.d("Item", item.json)
+            val ansyblConnection = parseJson<com.devpirates.ftl.models.AnsyblConnection>(item.json)
+            val action = HomeFragmentDirections.actionHomeFragmentToAnsyblItemsFragment(ansyblConnection)
             findNavController().navigate(action)
         }
 
@@ -92,7 +132,7 @@ class HomeFragment : Fragment() {
 
     private fun asyncGetHttpRequest(
         endpoint: String,
-        onSuccess: (ApiResponse<AnsyblConnection>) -> Unit,
+        onSuccess: (ApiResponse<com.devpirates.ftl.models.AnsyblConnection>) -> Unit,
         onError: (Exception) -> Unit
     ) {
         CoroutineScope(Dispatchers.IO).launch {
@@ -106,7 +146,7 @@ class HomeFragment : Fragment() {
                 val response = reader.readText()
                 val apiResponse = ApiResponse(
                     responseCode,
-                    parseJson<AnsyblConnection>(response)
+                    parseJson<com.devpirates.ftl.models.AnsyblConnection>(response)
                 )
                 print(response)
                 reader.close()

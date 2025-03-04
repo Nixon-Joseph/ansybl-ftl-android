@@ -15,16 +15,17 @@ data class AnsyblItem(
     @SerializedName("type") val type: String,
     @SerializedName("id") val id: String,
     @SerializedName("name") val name: String,
-    @SerializedName("content") val content: String,
-    @SerializedName("attributedTo") val attributedTo: List<AnsyblItemAttribute>,
+    @SerializedName("content") val content: String?,
+    @SerializedName("url") val url: String?,
+    @SerializedName("attributedTo") val attributedTo: List<AnsyblItemAttribute>?,
 ) : Parcelable
 
 @Parcelize
 data class AnsyblConnection(
     @SerializedName("@context") val context: String,
-    @SerializedName("summary") val summary: String,
-    @SerializedName("type") val type: String,
+    @SerializedName("summary") val summary: String?,
+    @SerializedName("type") val type: String?,
     @SerializedName("id") val id: String,
     @SerializedName("totalItems") val totalItems: Int,
-    @SerializedName("items") val items: List<AnsyblItem>,
+    @SerializedName("items") val items: List<AnsyblItem>?,
 ) : Parcelable

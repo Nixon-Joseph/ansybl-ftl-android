@@ -16,8 +16,8 @@ android {
         applicationId = "com.devpirates.ftl"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -55,4 +55,13 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    implementation(libs.room.runtime)
+    kapt(libs.room.compiler)
+    implementation(libs.room.ktx)
+    implementation(libs.room.rxjava3)
+    implementation(libs.room.rxjava2)
+    implementation(libs.room.guava)
+    testImplementation(libs.room.testing)
+    implementation(libs.room.paging)
+    implementation(libs.glide)
 }

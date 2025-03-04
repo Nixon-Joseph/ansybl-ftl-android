@@ -7,7 +7,7 @@ import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.RecyclerView
 import com.devpirates.ftl.R
-import com.devpirates.ftl.models.AnsyblConnection
+import com.devpirates.ftl.room.ansyblconnection.AnsyblConnection
 
 class AnsyblConnectionRecyclerView(private val dataset: ArrayList<AnsyblConnection>) : RecyclerView.Adapter<AnsyblConnectionRecyclerView.ViewHolder>() {
     var onItemClick: ((AnsyblConnection) -> Unit)? = null;

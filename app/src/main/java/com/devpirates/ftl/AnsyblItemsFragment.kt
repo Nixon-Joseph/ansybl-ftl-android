@@ -32,14 +32,16 @@ class AnsyblItemsFragment : Fragment() {
 
         val recyclerView = binding.root.findViewById<RecyclerView>(R.id.items_recycler_view)
         recyclerView?.layoutManager = LinearLayoutManager(super.getContext())
-        val adapter = AnsyblItemsRecyclerView(args.item.items)
-        recyclerView?.adapter = adapter
         val toolbar = requireActivity().findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar)
         toolbar.title = args.item.summary
+        if (args.item.items != null) {
+            val adapter = AnsyblItemsRecyclerView(args.item.items!!)
+            recyclerView?.adapter = adapter
 
-        adapter.onItemClick = { item ->
-            val action = AnsyblItemsFragmentDirections.actionAnsyblItemsFragmentToItemDetailFragment(item)
-            findNavController().navigate(action)
+            adapter.onItemClick = { item ->
+                val action = AnsyblItemsFragmentDirections.actionAnsyblItemsFragmentToItemDetailFragment(item)
+                findNavController().navigate(action)
+            }
         }
 
         return binding.root
