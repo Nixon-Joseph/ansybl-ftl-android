@@ -6,6 +6,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.webkit.URLUtil
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -76,32 +77,42 @@ class HomeFragment : Fragment() {
             builder.setTitle("Add Ansybl Connection")
 
             builder.setPositiveButton("Add") { dialog, _ ->
+                if (input.text.toString().isEmpty() || !URLUtil.isValidUrl(input.text.toString())) {
+                    Toast.makeText(super.requireContext(), "Please enter a valid URL", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
                 try {
                     asyncGetHttpRequest(
                         endpoint = input.text.toString(),
                         onSuccess = { apiRes ->
-                            val ansyblConnection = AnsyblConnection(
-                                apiRes.response.id,
-                                apiRes.response.summary,
-                                input.text.toString(),
-                                Instant.now().toString(),
-                                Gson().toJson(apiRes.response)
-                            )
+                            try {
+                                val ansyblConnection = AnsyblConnection(
+                                    apiRes.response.id,
+                                    apiRes.response.summary,
+                                    input.text.toString(),
+                                    Instant.now().toString(),
+                                    Gson().toJson(apiRes.response)
+                                )
 
-                            kotlin.concurrent.thread(true, false, null, "GetAnsyblConnections", 1, {
-                                try {
-                                    db!!.ansyblConnectionDao().insertAll(ansyblConnection)
-                                } catch (e: Exception) {
-                                    Log.d("Error", e.toString())
-                                    // put toast in main thread
-                                    super.requireActivity().runOnUiThread {
-                                        Toast.makeText(super.requireContext(), "Unable to save connection", Toast.LENGTH_SHORT).show()
+                                kotlin.concurrent.thread(true, false, null, "GetAnsyblConnections", 1, {
+                                    try {
+                                        db!!.ansyblConnectionDao().insertAll(ansyblConnection)
+                                    } catch (e: Exception) {
+                                        Log.d("Error", e.toString())
+                                        // put toast in main thread
+                                        super.requireActivity().runOnUiThread {
+                                            Toast.makeText(super.requireContext(), "Unable to save connection", Toast.LENGTH_SHORT).show()
+                                        }
                                     }
-                                }
-                            })
-                            connections.add(ansyblConnection)
-                            adapter.notifyItemInserted(connections.size - 1)
-                            dialog.dismiss()
+                                })
+                                connections.add(ansyblConnection)
+                                adapter.notifyItemInserted(connections.size - 1)
+                            } catch (e: Exception) {
+                                Toast.makeText(super.requireContext(), "Error getting ansybl feed for ${input.text}", Toast.LENGTH_LONG).show()
+                                Log.d("Error", e.toString())
+                            } finally {
+                                dialog.dismiss()
+                            }
                         },
                         onError = { error ->
                             Toast.makeText(super.requireContext(), "Error getting ansybl feed for ${input.text}", Toast.LENGTH_LONG).show()
@@ -136,12 +147,13 @@ class HomeFragment : Fragment() {
         onError: (Exception) -> Unit
     ) {
         CoroutineScope(Dispatchers.IO).launch {
-            val url = URL(endpoint)
-            val openedConnection = url.openConnection() as HttpURLConnection
-            openedConnection.requestMethod = "GET"
-
-            val responseCode = openedConnection.responseCode
+            var responseCode = -1
             try {
+                val url = URL(endpoint)
+                val openedConnection = url.openConnection() as HttpURLConnection
+                openedConnection.requestMethod = "GET"
+
+                responseCode = openedConnection.responseCode
                 val reader = BufferedReader(InputStreamReader(openedConnection.inputStream))
                 val response = reader.readText()
                 val apiResponse = ApiResponse(
